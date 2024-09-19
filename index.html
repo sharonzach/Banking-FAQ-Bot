@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Gradient Background Chatbot</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* Live Color-Changing Gradient */
+        body {
+            background: linear-gradient(270deg, #ff7e5f, #feb47b, #6a82fb, #fc5c7d, #ffcc00);
+            background-size: 1000% 1000%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            25% {
+                background-position: 50% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            75% {
+                background-position: 50% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Container for the chatbot */
+        .chat-container {
+            position: relative;
+            z-index: 1;
+            width: 380px;
+            height: 700px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        .chat-logo img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+
+        .chat-header h1 {
+            color: #333;
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .chat-box {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 500px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            background-color: #f4f4f4;
+        }
+
+        .message {
+            margin-bottom: 10px;
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.user p {
+            background-color: #007bff;
+            color: #fff;
+            display: inline-block;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 70%;
+        }
+
+        .message.bot p {
+            background-color: #ffcc00;
+            color: #333;
+            display: inline-block;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 70%;
+        }
+
+        .chat-input {
+            display: flex;
+            position: fixed;
+            bottom: 20px;
+            width: 380px;
+            margin: 0 auto;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        input[type="text"] {
+            width: calc(100% - 50px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="chat-logo">
+                <img src="/static/image.png" alt="Chatbot Logo">
+            </div>
+            <h1>Chatbot</h1>
+        </div>
+        <div class="chat-box" id="chat-box">
+            <!-- Messages will appear here -->
+        </div>
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="user-input" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <audio id="audio" controls style="display: none;"></audio>
+
+    <script>
+        // Append messages to chat box
+        function appendMessage(sender, text) {
+            const chatBox = document.getElementById('chat-box');
+            const message = document.createElement('div');
+            message.classList.add('message', sender);
+            message.innerHTML = `<p>${text}</p>`;
+            chatBox.appendChild(message);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Handle user message and response from chatbot
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input').value;
+            if (userInput.trim() === '') return;
+
+            appendMessage('user', userInput);
+            document.getElementById('user-input').value = '';
+
+            try {
+                const response = await fetch('http://localhost:5000/chatbot', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: userInput }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                const answer = data.Answer;
+                const audioFile = data.AudioFile;
+
+                appendMessage('bot', answer);
+
+                const audioElement = document.getElementById('audio');
+                audioElement.src = `http://localhost:5000/static/${audioFile}?t=${new Date().getTime()}`;
+                audioElement.style.display = 'block';
+                audioElement.play();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        document.getElementById('user-input').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
